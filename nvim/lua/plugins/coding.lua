@@ -34,6 +34,14 @@ return {
       max_lines = 3,
     },
   },
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        ocaml = { "ocamlformat" },
+      },
+    },
+  },
 
   -- Better quickfix/location list
   {

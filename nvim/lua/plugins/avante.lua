@@ -37,7 +37,7 @@ return {
     providers = {
       copilot = {
         endpoint = "https://api.githubcopilot.com",
-        model = "claude-sonnet-4.5",
+        model = "GPT-4.1",
         temperature = 0,
         extra_request_body = {
           max_tokens = 8000,
