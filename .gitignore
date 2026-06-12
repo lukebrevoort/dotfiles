@@ -1,0 +1,27 @@
+.opencode/pm.db
+.DS_Store
+__pycache__/
+*.pyc
+
+# Machine-generated shell state
+fish/fish_variables
+fish.archived/fish_variables
+
+# Local profile data and credentials
+.local/
+*.local
+*.env
+!.env.*.example
+auth.json
+credentials.json
+
+# AI client state
+.codex/
+.claude/
+.opencode/
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+*.sqlite3

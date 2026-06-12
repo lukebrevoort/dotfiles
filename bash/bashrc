@@ -1,0 +1,98 @@
+# ===========================================================================
+# Bash configuration — sourced by both interactive and login shells
+# Equivalent to dotfiles/fish/config.fish
+# ===========================================================================
+
+export EDITOR=nvim
+export VISUAL=nvim
+
+# ------------------------------------------------------------------
+# PATH / Homebrew
+# ------------------------------------------------------------------
+if [[ -x "/opt/homebrew/bin/brew" ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x "/usr/local/bin/brew" ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# ------------------------------------------------------------------
+# Profile / identity file
+# ------------------------------------------------------------------
+if [[ -f "$HOME/.config/dotfiles/profile" ]]; then
+    export DOTFILES_PROFILE
+    IFS= read -r DOTFILES_PROFILE < "$HOME/.config/dotfiles/profile"
+fi
+: "${DOTFILES_PROFILE:=personal}"
+export DOTFILES_PROFILE
+
+# ------------------------------------------------------------------
+# Load profile environment variables (security filtered)
+# ------------------------------------------------------------------
+allowed_prefixes=(OPENCODE_ NOTION_ ANTHROPIC_ OPENAI_ GITHUB_ GEMINI_ MCP_ API_)
+
+for local_env in \
+    "$HOME/.config/dotfiles/$DOTFILES_PROFILE.env" \
+    "$HOME/.env.opencode"
+do
+    [[ -f "$local_env" ]] || continue
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [[ -z "$line" || "$line" == '#'* ]] && continue
+        line="${line#export }"
+
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            var_name="${BASH_REMATCH[1]}"
+            var_val="${BASH_REMATCH[2]}"
+            is_allowed=0
+
+            for pfx in "${allowed_prefixes[@]}"; do
+                [[ "$var_name" == "$pfx"* ]] && { is_allowed=1; break; }
+            done
+
+            if (( is_allowed )); then
+                var_val="${var_val%\"}"
+                var_val="${var_val#\"}"
+                var_val="${var_val%\'}"
+                var_val="${var_val#\'}"
+                export "$var_name=$var_val"
+            fi
+        fi
+    done < "$local_env"
+done
+
+if [[ -r "$HOME/.config/dotfiles/local.sh" ]]; then
+    source "$HOME/.config/dotfiles/local.sh"
+fi
+
+# ------------------------------------------------------------------
+# Starship prompt
+# ------------------------------------------------------------------
+if [[ $- == *i* ]] && command -v starship &>/dev/null; then
+    eval "$(starship init bash)"
+fi
+
+# ------------------------------------------------------------------
+# Zoxide (smart cd)
+# ------------------------------------------------------------------
+if [[ $- == *i* ]] && command -v zoxide &>/dev/null; then
+    eval "$(zoxide init bash)"
+fi
+
+# ------------------------------------------------------------------
+# lazygit alias
+# ------------------------------------------------------------------
+if command -v lazygit &>/dev/null; then
+    alias lg='lazygit'
+fi
+
+# ------------------------------------------------------------------
+# Portable bash functions
+# ------------------------------------------------------------------
+bash_funcs_dir="$HOME/.config/bash/functions"
+if [[ -d "$bash_funcs_dir" ]]; then
+    for func_file in "$bash_funcs_dir"/*.bash; do
+        [[ -f "$func_file" ]] && source "$func_file"
+    done
+fi

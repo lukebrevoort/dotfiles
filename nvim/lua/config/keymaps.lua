@@ -22,10 +22,10 @@ vim.keymap.set("v", "<", "<gv", { noremap = true, desc = "Indent left" })
 vim.keymap.set("v", ">", ">gv", { noremap = true, desc = "Indent right" })
 
 -- Move lines up/down
-vim.keymap.set("n", "<A-j>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
-vim.keymap.set("n", "<A-k>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
-vim.keymap.set("v", "<A-j>", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move selection down" })
-vim.keymap.set("v", "<A-k>", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move selection up" })
+vim.keymap.set("n", "<C-S-j>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
+vim.keymap.set("n", "<C-S-k>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
+vim.keymap.set("v", "<C-S-j>", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move selection down" })
+vim.keymap.set("v", "<C-S-k>", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move selection up" })
 
 -- Better paste (don't yank replaced text in visual mode)
 vim.keymap.set("v", "p", '"_dP', { noremap = true, desc = "Paste without yanking" })

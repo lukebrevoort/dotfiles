@@ -1,0 +1,5 @@
+# Machine-local shell customizations. Copy to:
+# ~/.config/dotfiles/local.sh
+
+# export HTTP_PROXY="http://proxy.example"
+# export CODEX_CA_CERTIFICATE="${HOME}/.config/company/root-ca.pem"

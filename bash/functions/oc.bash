@@ -1,0 +1,4 @@
+# Run Opencode
+oc() {
+    opencode "$@"
+}
