@@ -13,7 +13,7 @@ dev() {
     z "$1" || return 1
 
     if command -v open &>/dev/null; then
-        open -na Ghostty --args --working-directory "$(pwd)" -e /usr/bin/env bash -lc 'opencode' >/dev/null 2>&1 &
+        open -a Ghostty --args --new-window --working-directory "$(pwd)" -e /usr/bin/env bash -lc 'opencode' >/dev/null 2>&1 &
     fi
 
     nvim .

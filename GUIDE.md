@@ -33,11 +33,14 @@ See `WORK_LAPTOP_SETUP.html` for the visual first-day runbook.
 - `--non-interactive`
 - `--skip-packages`
 - `--skip-git`
+- `--skip-ai`
 - `--skip-doctor`
 
-Conflicting files are backed up with a timestamp. Re-running setup is safe.
+Setup copies managed configuration into the standard application paths.
+Applications do not read directly from this repository. Conflicting files are
+backed up with a timestamp, and re-running setup is safe.
 
-Remove repository-owned links without deleting profile credentials or state:
+Remove unchanged managed copies without deleting credentials or modified files:
 
 ```bash
 scripts/uninstall.sh --profile work
@@ -76,18 +79,19 @@ The OpenCode launcher now resolves commands through the Bash environment.
 - `dev <name>`: jump, launch OpenCode in Ghostty, and open Neovim.
 - `oc [args]`: run OpenCode.
 - `lg [args]`: run lazygit.
-- `codex [args]`: run Codex with profile-specific `CODEX_HOME`.
-- `opencode [args]`: run OpenCode with profile-specific config, data, cache, and state roots.
-- `claude [args]`: run Claude Code with a profile-specific config directory.
+- `codex [args]`: run Codex.
+- `opencode [args]`: run OpenCode.
+- `claude [args]`: run Claude Code.
 
-Fish is retained only as migration history and is no longer linked by `setup`.
+Fish is retained only as migration history and is no longer installed by `setup`.
 
 ## AI Isolation
 
-- Codex uses `~/.config/codex-<profile>` for config, credentials, logs, sessions,
-  and other state.
-- OpenCode uses separate XDG config, data, cache, and state roots per profile.
-- Claude Code uses `~/.config/claude-<profile>` for settings and local state.
+- Codex uses its standard `~/.codex` config and state directory.
+- OpenCode uses its standard `~/.config/opencode` configuration directory.
+- Claude Code uses its standard `~/.claude` configuration directory.
+- Work and personal separation comes from installing the selected profile on
+  separate laptops, not from hidden profile-specific path overrides.
 - Claude OAuth credentials on macOS remain in Keychain. Always verify the active
   account with `/status`; do not assume the wrapper changes the Keychain login.
 

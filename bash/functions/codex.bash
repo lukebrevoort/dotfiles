@@ -1,7 +1,4 @@
-# Run Codex with profile-specific configuration, credentials, and session state.
+# Run Codex from its standard configuration and state directory.
 codex() {
-    local codex_home="$HOME/.config/codex-${DOTFILES_PROFILE:-personal}"
-    mkdir -p "$codex_home"
-    chmod 700 "$codex_home"
-    CODEX_HOME="$codex_home" command codex "$@"
+    command codex "$@"
 }

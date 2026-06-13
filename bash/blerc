@@ -1,0 +1,21 @@
+# ble.sh configuration. Loaded automatically by ble.sh.
+
+ble-face -s auto_complete 'fg=#504945'
+ble-face -s menu_filter_input 'fg=#fabd2f,bold'
+ble-face -s menu_filter_no_match 'fg=#fb4934'
+
+bleopt complete_auto_complete=1
+bleopt history_auto=1
+bleopt highlight_line=1
+bleopt highlight_syntax=1
+bleopt complete_menu_style=rich
+bleopt complete_auto_delay=80
+bleopt history_share=1
+
+ble-bind -f 'up' 'history-search-backward'
+ble-bind -f 'down' 'history-search-forward'
+ble-bind -f 'end' 'auto-complete:insert'
+ble-bind -f 'C-e' 'auto-complete:insert'
+ble-bind -f 'M-f' 'auto-complete:insert_word'
+ble-bind -f 'C-f' 'auto-complete:insert'
+ble-bind -f 'C-g' 'auto-complete:cancel'

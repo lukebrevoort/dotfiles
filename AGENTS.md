@@ -56,7 +56,7 @@ All implementation follows `PLAN.md`.
 
 ### Verifier
 
-- Runs syntax checks, dry-runs, clean-home tests, symlink validation, package
+- Runs syntax checks, dry-runs, clean-home tests, installed-file validation, package
   audits, shell startup tests, and profile acceptance criteria.
 - Reports concrete evidence and does not modify implementation during a gate.
 
@@ -82,7 +82,7 @@ All implementation follows `PLAN.md`.
 - Provide an intermediate user update before editing files.
 - Use `apply_patch` for manual edits.
 - Prefer idempotent scripts and support `--dry-run`.
-- Back up conflicting user files before replacing or linking them.
+- Back up conflicting user files before replacing them.
 - Do not print secret values in logs or health checks.
 - Keep the minimal profile functional throughout development.
 - Test both Apple Silicon and Intel Homebrew path discovery logically, even when

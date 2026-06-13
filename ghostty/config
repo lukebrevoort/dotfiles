@@ -1,4 +1,4 @@
-theme = dark:kanagawa-dragon-terminal,light:kanagawa-lotus-terminal
+theme = kanagawa-dragon-terminal
 font-family = FiraCode Nerd Font
 font-size = 14
 window-save-state = always
@@ -8,3 +8,4 @@ confirm-close-surface = false
 copy-on-select = clipboard
 mouse-hide-while-typing = true
 keybind = super+t=new_window
+command = /bin/bash

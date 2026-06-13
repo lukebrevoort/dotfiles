@@ -46,7 +46,7 @@ The installer will expose these profiles:
 | `work` | Employer-owned laptop | Bash | Ghostty + AeroSpace |
 | `minimal` | Restricted or recovery setup | Zsh | Apple Terminal |
 
-Profiles choose packages, linked configuration, AI configuration roots, and
+Profiles choose packages, copied configuration, AI configuration, and
 optional integrations. They do not contain credentials.
 
 ### AD-2: Bash Replaces Fish
@@ -69,7 +69,8 @@ system Bash where company policy allows it. The minimal profile keeps Zsh.
 ### AD-3: Strict Work and Personal Isolation
 
 The repository may share non-sensitive editor, terminal, theme, and shell
-defaults. The following must remain profile-specific:
+defaults. Work and personal laptops install different profiles into standard
+application paths. The following must remain machine-specific:
 
 - AI provider accounts and tokens.
 - Git identities, signing keys, and credential helpers.
@@ -87,22 +88,15 @@ Target local layout:
 ~/.config/dotfiles/local.sh                # untracked machine overrides
 ~/.config/dotfiles/work.env                # untracked work-only environment
 ~/.config/dotfiles/personal.env            # untracked personal environment
-~/.config/opencode-work/                   # work OpenCode configuration
-~/.config/opencode-personal/               # personal OpenCode configuration
-~/.local/share/opencode-work/              # work OpenCode credentials/data
-~/.local/share/opencode-personal/          # personal OpenCode credentials/data
-~/.config/claude-work/                     # work Claude settings/state
-~/.config/claude-personal/                 # personal Claude settings/state
-~/.config/codex-work/                      # work Codex config/auth/sessions
-~/.config/codex-personal/                  # personal Codex config/auth/sessions
+~/.config/opencode/                        # active OpenCode configuration
+~/.claude/                                 # active Claude settings/state
+~/.codex/                                  # active Codex config/auth/sessions
 ~/Developer/work/                          # company repositories
 ~/Developer/personal/                      # personal repositories
 ```
 
-Exact environment variables and CLI flags for alternate configuration roots
-must be verified against the installed versions of each AI client. Where a tool
-cannot relocate all state, macOS user accounts or a dedicated wrapper with
-audited state directories must be considered.
+The selected profile is installed as real files. Applications use their normal
+config paths, while credentials and machine-local overrides remain untracked.
 
 ### AD-4: Repository Instructions Are Local to Each Project
 
@@ -125,10 +119,10 @@ It should:
 
 1. Detect macOS version, architecture, admin access, Homebrew, and existing files.
 2. Ask for `personal`, `work`, or `minimal`.
-3. Show the packages and links selected by that profile.
+3. Show the packages and configuration selected by that profile.
 4. Support `--dry-run`, `--non-interactive`, and `--profile`.
 5. Install packages through a version-controlled `Brewfile`.
-6. Back up conflicting files before linking.
+6. Back up conflicting files before installing copies.
 7. Run health checks after each stage.
 8. Pause for browser-based logins rather than requesting secrets in the terminal.
 9. Produce a final report of completed, skipped, and failed steps.
@@ -209,7 +203,7 @@ dotfiles/
     lib/
       common.sh
       prompts.sh
-      links.sh
+      deploy.sh
     install-packages.sh
     configure-shell.sh
     configure-git.sh
@@ -252,7 +246,7 @@ These must be addressed during implementation:
 4. OpenCode references missing `plugin/caffeinate.ts`,
    `bin/with-opencode-env`, and `mcp/pm-mcp-server`.
 5. Repository OpenCode config is not the live config currently in use.
-6. Starship is linked as `~/.config/starship/`, but the expected default file is
+6. Starship was linked as `~/.config/starship/`, but the expected default file is
    `~/.config/starship.toml`.
 7. `fish/fish_variables` is machine-generated and contains local application
    paths.
@@ -280,7 +274,7 @@ Tasks:
 - Add ignore rules for machine state, AI databases, caches, credentials, and
   local overrides.
 - Commit a known baseline only after secret and path scanning.
-- Record current command versions and symlink targets.
+- Record current command versions and installed config paths.
 
 Gate:
 
@@ -336,7 +330,7 @@ Tasks:
 - Port `proj`, `dev`, `oc`, and `lg`.
 - Add profile-aware environment loading.
 - Add minimal Zsh configuration.
-- Remove Fish from new profile links; archive or delete it only after parity.
+- Remove Fish from new profile installs; archive or delete it only after parity.
 - Update Ghostty and AeroSpace launch commands.
 
 Gate:
@@ -370,7 +364,7 @@ Gate:
 Tasks:
 
 - Make Ghostty use profile-selected Bash without absolute paths.
-- Correct Starship linking.
+- Install Starship at its standard configuration path.
 - Update AeroSpace launchers and preserve a reliable terminal shortcut.
 - Make Neovim language support demand-driven rather than always loading Flutter,
   Dart, or unrelated tooling.
@@ -433,7 +427,7 @@ Gate:
 
 **Goal**: Prove that onboarding can be completed under time pressure.
 
-**Status**: Initial doctor and conservative unlink workflow implemented; timed
+**Status**: Initial doctor and conservative uninstall workflow implemented; timed
 clean-machine drill remains.
 
 Tasks:
@@ -490,7 +484,7 @@ The migration is complete when:
 - Unknown or unsupported isolation limitations are clearly reported.
 - Bash is the default configured shell for full profiles.
 - Minimal Zsh + Apple Terminal + Neovim remains usable.
-- `doctor.sh` detects missing packages, broken links, wrong identities, unsafe
+- `doctor.sh` detects missing packages, stale installed configs, wrong identities, unsafe
   permissions, hard-coded paths, and likely secrets.
 - A timed first-day drill reaches a productive company-repository workflow.
 

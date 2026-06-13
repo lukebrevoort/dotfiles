@@ -6,9 +6,41 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 # shellcheck source=scripts/lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=scripts/lib/deploy.sh
+source "${SCRIPT_DIR}/lib/deploy.sh"
 
 FAILURES=0
 WARNINGS=0
+PROFILE=""
+INSTALL_AI="${INSTALL_AI:-1}"
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/doctor.sh [--profile work|personal|minimal] [--skip-ai]
+EOF
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --profile)
+        PROFILE="${2:-}"
+        shift 2
+        ;;
+      --skip-ai)
+        INSTALL_AI=0
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown argument: $1"
+        ;;
+    esac
+  done
+}
 
 pass() {
   log_success "$*"
@@ -40,13 +72,16 @@ check_optional_command() {
   fi
 }
 
-check_link() {
+check_installed_path() {
   local target="$1"
-  local expected="$2"
-  if [ -L "${target}" ] && [ "$(readlink "${target}")" = "${expected}" ]; then
-    pass "Link correct: ${target}"
+  local source="$2"
+
+  if paths_match "${source}" "${target}"; then
+    pass "Installed config current: ${target}"
+  elif [ -e "${target}" ] || [ -L "${target}" ]; then
+    warn "Installed config differs from repository: ${target}"
   else
-    fail "Link missing or incorrect: ${target}"
+    fail "Installed config missing: ${target}"
   fi
 }
 
@@ -62,8 +97,11 @@ check_mode_700() {
 }
 
 main() {
-  local profile="unknown"
-  if [ -r "${HOME}/.config/dotfiles/profile" ]; then
+  local profile="${PROFILE:-unknown}"
+
+  parse_args "$@"
+  profile="${PROFILE:-unknown}"
+  if [ -z "${PROFILE}" ] && [ -r "${HOME}/.config/dotfiles/profile" ]; then
     IFS= read -r profile < "${HOME}/.config/dotfiles/profile"
   fi
 
@@ -75,7 +113,7 @@ main() {
 
   if [ "${profile}" = "minimal" ]; then
     check_command zsh
-    check_link "${HOME}/.zshrc" "${REPO_ROOT}/zsh/zshrc"
+    check_installed_path "${HOME}/.zshrc" "${REPO_ROOT}/zsh/zshrc"
   else
     check_command bash
     check_command starship
@@ -83,21 +121,26 @@ main() {
     check_optional_command opencode
     check_optional_command codex
     check_optional_command claude
-    check_link "${HOME}/.bashrc" "${REPO_ROOT}/bash/bashrc"
-    check_link "${HOME}/.config/bash/functions" "${REPO_ROOT}/bash/functions"
-    check_link "${HOME}/.config/ghostty" "${REPO_ROOT}/ghostty"
-    check_link "${HOME}/.config/aerospace" "${REPO_ROOT}/aerospace"
-    check_link "${HOME}/.config/codex-${profile}/config.toml" "${REPO_ROOT}/ai/codex/config.toml"
-    check_link "${HOME}/.config/claude-${profile}/settings.json" "${REPO_ROOT}/ai/claude/settings.json"
-    check_mode_700 "${HOME}/.config/codex-${profile}"
-    check_mode_700 "${HOME}/.config/opencode-${profile}"
-    check_mode_700 "${HOME}/.config/claude-${profile}"
-    warn "Claude OAuth credentials use macOS Keychain; verify the active account with /status."
+    check_installed_path "${HOME}/.bashrc" "${REPO_ROOT}/bash/bashrc"
+    check_installed_path "${HOME}/.blerc" "${REPO_ROOT}/bash/blerc"
+    check_installed_path "${HOME}/.config/bash" "${REPO_ROOT}/bash"
+    check_installed_path "${HOME}/.config/ghostty" "${REPO_ROOT}/ghostty"
+    check_installed_path "${HOME}/.config/aerospace" "${REPO_ROOT}/aerospace"
+    if [ "${INSTALL_AI:-1}" -eq 1 ]; then
+      check_installed_path "${HOME}/.codex/config.toml" "${REPO_ROOT}/ai/codex/config.toml"
+      check_installed_path "${HOME}/.claude/settings.json" "${REPO_ROOT}/ai/claude/settings.json"
+      check_mode_700 "${HOME}/.codex"
+      check_mode_700 "${HOME}/.config/opencode"
+      check_mode_700 "${HOME}/.claude"
+      warn "Claude OAuth credentials use macOS Keychain; verify the active account with /status."
+    else
+      log_info "AI configuration checks skipped."
+    fi
   fi
 
-  check_link "${HOME}/.config/nvim" "${REPO_ROOT}/nvim"
-  check_link "${HOME}/.config/git/config" "${REPO_ROOT}/git/config"
-  check_link "${HOME}/.config/git/ignore" "${REPO_ROOT}/git/ignore"
+  check_installed_path "${HOME}/.config/nvim" "${REPO_ROOT}/nvim"
+  check_installed_path "${HOME}/.config/git/config" "${REPO_ROOT}/git/config"
+  check_installed_path "${HOME}/.config/git/ignore" "${REPO_ROOT}/git/ignore"
 
   if rg -n --hidden -g '!.git/**' -g '!PLAN.md' -g '!scripts/doctor.sh' '/Users/[^/]+/' "${REPO_ROOT}" >/dev/null 2>&1; then
     warn "Repository contains hard-coded macOS home paths. Run: rg '/Users/[^/]+/'"
