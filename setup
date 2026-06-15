@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=scripts/lib/common.sh
+source "${REPO_ROOT}/scripts/lib/common.sh"
+# shellcheck source=scripts/lib/prompts.sh
+source "${REPO_ROOT}/scripts/lib/prompts.sh"
+# shellcheck source=scripts/lib/deploy.sh
+source "${REPO_ROOT}/scripts/lib/deploy.sh"
+
+PROFILE=""
+DRY_RUN=0
+NON_INTERACTIVE=0
+INSTALL_PACKAGES=1
+CONFIGURE_GIT=1
+RUN_DOCTOR=1
+INSTALL_AI=1
+
+usage() {
+  cat <<'EOF'
+Usage: ./setup [options]
+
+Options:
+  --profile work|personal|minimal
+  --dry-run                 Print changes without applying them
+  --non-interactive         Use defaults and never prompt
+  --skip-packages           Do not install Homebrew packages
+  --skip-git                Do not prompt for Git identity
+  --skip-ai                 Do not install AI client configuration
+  --skip-doctor             Do not run final health checks
+  -h, --help                Show this help
+EOF
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --profile)
+        [ "$#" -ge 2 ] || die "--profile requires a value"
+        PROFILE="$2"
+        shift 2
+        ;;
+      --dry-run)
+        DRY_RUN=1
+        shift
+        ;;
+      --non-interactive)
+        NON_INTERACTIVE=1
+        shift
+        ;;
+      --skip-packages)
+        INSTALL_PACKAGES=0
+        shift
+        ;;
+      --skip-git)
+        CONFIGURE_GIT=0
+        shift
+        ;;
+      --skip-ai)
+        INSTALL_AI=0
+        shift
+        ;;
+      --skip-doctor)
+        RUN_DOCTOR=0
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown option: $1"
+        ;;
+    esac
+  done
+}
+
+validate_environment() {
+  [ "$(uname -s)" = "Darwin" ] || die "This setup currently supports macOS only."
+  if [ "${DRY_RUN}" -eq 0 ] && [ ! -w "${HOME}" ]; then
+    die "Home directory is not writable: ${HOME}"
+  fi
+}
+
+load_profile() {
+  if [ -z "${PROFILE}" ]; then
+    PROFILE="$(choose_profile)" || die "Invalid profile selection."
+  fi
+
+  case "${PROFILE}" in
+    work|personal|minimal) ;;
+    *) die "Unknown profile: ${PROFILE}" ;;
+  esac
+
+  # shellcheck disable=SC1090
+  source "${REPO_ROOT}/profiles/${PROFILE}.conf"
+}
+
+show_plan() {
+  cat <<EOF
+
+Profile:       ${PROFILE_NAME}
+Shell:         ${PROFILE_SHELL}
+Desktop:       ${PROFILE_DESKTOP}
+AI packages:   ${PROFILE_INSTALL_AI}
+Project root:  ${PROFILE_PROJECT_ROOT}
+Dry run:       ${DRY_RUN}
+
+EOF
+}
+
+migrate_legacy_env() {
+  local target="${HOME}/.config/dotfiles/${PROFILE_NAME}.env"
+  local temporary
+  local source
+
+  [ -e "${target}" ] && return 0
+  [ "${DRY_RUN}" -eq 0 ] || return 0
+
+  temporary="$(mktemp)"
+  for source in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
+    [ -f "${source}" ] || continue
+    awk '
+      /^[[:space:]]*export[[:space:]]+(OPENCODE_|NOTION_|ANTHROPIC_|OPENAI_|GITHUB_|GEMINI_|MCP_|API_|TAVILY_)[A-Za-z0-9_]*=/ {
+        print
+      }
+    ' "${source}" >> "${temporary}"
+  done
+
+  if [ -s "${temporary}" ]; then
+    ensure_dir "$(dirname "${target}")"
+    sort -u "${temporary}" > "${target}"
+    chmod 600 "${target}"
+    log_success "Migrated legacy API environment variables to ${target}"
+  fi
+  rm -f "${temporary}"
+}
+
+remove_legacy_repo_link() {
+  local target="$1"
+  local expected="$2"
+
+  if [ -L "${target}" ] && [ "$(readlink "${target}")" = "${expected}" ]; then
+    run rm "${target}"
+    log_success "Removed obsolete repository link: ${target}"
+  fi
+}
+
+write_profile_state() {
+  local state_dir="${HOME}/.config/dotfiles"
+  ensure_dir "${state_dir}"
+  ensure_dir "${PROFILE_PROJECT_ROOT}"
+
+  if [ "${PROFILE_INSTALL_AI}" = "yes" ] && [ "${INSTALL_AI}" -eq 1 ]; then
+    ensure_dir "${HOME}/.codex"
+    ensure_dir "${HOME}/.config/opencode"
+    ensure_dir "${HOME}/.claude"
+
+    if [ "${DRY_RUN}" -eq 0 ]; then
+      chmod 700 "${HOME}/.codex" "${HOME}/.config/opencode" "${HOME}/.claude"
+    fi
+  fi
+
+  if [ "${DRY_RUN}" -eq 1 ]; then
+    printf '+ write %q to %q\n' "${PROFILE_NAME}" "${state_dir}/profile"
+  else
+    printf '%s\n' "${PROFILE_NAME}" > "${state_dir}/profile"
+  fi
+}
+
+install_common() {
+  install_path "${REPO_ROOT}/nvim" "${HOME}/.config/nvim"
+  install_path "${REPO_ROOT}/git/config" "${HOME}/.config/git/config"
+  install_path "${REPO_ROOT}/git/ignore" "${HOME}/.config/git/ignore"
+  install_path "${REPO_ROOT}/starship/starship.toml" "${HOME}/.config/starship.toml"
+}
+
+install_profile() {
+  install_common
+
+  if [ "${PROFILE_SHELL}" = "bash" ]; then
+    install_path "${REPO_ROOT}/bash/bashrc" "${HOME}/.bashrc"
+    install_path "${REPO_ROOT}/bash/profile" "${HOME}/.bash_profile"
+    install_path "${REPO_ROOT}/bash/blerc" "${HOME}/.blerc"
+    install_path "${REPO_ROOT}/bash" "${HOME}/.config/bash"
+  else
+    install_path "${REPO_ROOT}/zsh/zshrc" "${HOME}/.zshrc"
+  fi
+
+  if [ "${PROFILE_DESKTOP}" = "full" ]; then
+    install_path "${REPO_ROOT}/ghostty" "${HOME}/.config/ghostty"
+    install_path "${REPO_ROOT}/aerospace" "${HOME}/.config/aerospace"
+  fi
+
+  if [ "${PROFILE_INSTALL_AI}" = "yes" ] && [ "${INSTALL_AI}" -eq 1 ]; then
+    install_path "${REPO_ROOT}/ai/codex/config.toml" "${HOME}/.codex/config.toml"
+    install_path "${REPO_ROOT}/ai/codex/AGENTS.md" "${HOME}/.codex/AGENTS.md"
+    install_path "${REPO_ROOT}/ai/claude/settings.json" "${HOME}/.claude/settings.json"
+    install_path "${REPO_ROOT}/ai/claude/CLAUDE.md" "${HOME}/.claude/CLAUDE.md"
+
+    if [ "${PROFILE_NAME}" = "work" ]; then
+      install_path "${REPO_ROOT}/ai/opencode/work.json" "${HOME}/.config/opencode/opencode.json"
+    else
+      install_path "${REPO_ROOT}/opencode/opencode.json" "${HOME}/.config/opencode/opencode.json"
+      install_path "${REPO_ROOT}/opencode/AGENTS.md" "${HOME}/.config/opencode/AGENTS.md"
+      install_path "${REPO_ROOT}/opencode/agent" "${HOME}/.config/opencode/agent"
+      install_path "${REPO_ROOT}/opencode/skills" "${HOME}/.config/opencode/skills"
+    fi
+  fi
+}
+
+offer_shell_change() {
+  local brew_prefix
+  local bash_path
+
+  [ "${PROFILE_SHELL}" = "bash" ] || return 0
+  command_exists brew || return 0
+  brew_prefix="$(brew --prefix)"
+  bash_path="${brew_prefix}/bin/bash"
+  [ -x "${bash_path}" ] || {
+    log_warn "Homebrew Bash is not installed yet."
+    return 0
+  }
+  [ "${SHELL:-}" = "${bash_path}" ] && return 0
+
+  if confirm "Change the login shell to ${bash_path}?" "no"; then
+    if ! grep -qxF "${bash_path}" /etc/shells; then
+      log_info "Adding Homebrew Bash to /etc/shells requires administrator access."
+      if [ "${DRY_RUN}" -eq 1 ]; then
+        printf '+ echo %q | sudo tee -a /etc/shells\n' "${bash_path}"
+      else
+        printf '%s\n' "${bash_path}" | sudo tee -a /etc/shells >/dev/null
+      fi
+    fi
+    run chsh -s "${bash_path}"
+  else
+    log_warn "Login shell unchanged. Bash config can still be tested with: ${bash_path} -l"
+  fi
+}
+
+main() {
+  parse_args "$@"
+  validate_environment
+  load_profile
+  export DRY_RUN NON_INTERACTIVE PROFILE_NAME PROFILE_SHELL PROFILE_DESKTOP PROFILE_INSTALL_AI INSTALL_AI
+
+  show_plan
+  if [ "${NON_INTERACTIVE}" -eq 0 ] && ! confirm "Continue with this setup?" "yes"; then
+    log_warn "Setup cancelled."
+    exit 0
+  fi
+
+  write_profile_state
+  migrate_legacy_env
+  remove_legacy_repo_link "${HOME}/.config/starship" "${REPO_ROOT}/starship"
+
+  if [ "${INSTALL_PACKAGES}" -eq 1 ]; then
+    "${REPO_ROOT}/scripts/install-packages.sh"
+  fi
+
+  install_profile
+
+  if [ "${CONFIGURE_GIT}" -eq 1 ]; then
+    "${REPO_ROOT}/scripts/configure-git.sh"
+  fi
+
+  offer_shell_change
+
+  if [ "${RUN_DOCTOR}" -eq 1 ]; then
+    if [ "${DRY_RUN}" -eq 1 ]; then
+      log_info "Skipping doctor during dry-run because links were not applied."
+    else
+      "${REPO_ROOT}/scripts/doctor.sh"
+    fi
+  fi
+
+  log_success "Setup finished for profile: ${PROFILE_NAME}"
+}
+
+main "$@"

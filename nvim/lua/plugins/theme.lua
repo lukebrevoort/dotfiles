@@ -1,39 +1,17 @@
 return {
-  -- Catppuccin (Dark Mode)
+  -- Kanagawa (dark/light variants)
   {
-    "catppuccin/nvim",
-    name = "catppuccin",
+    "rebelot/kanagawa.nvim",
+    name = "kanagawa",
     lazy = false,
     priority = 1000,
     config = function()
-      require("catppuccin").setup({
-        flavour = "macchiato", -- dark variant
-        integrations = {
-          cmp = true,
-          gitsigns = true,
-          nvimtree = true,
-          treesitter = true,
-          notify = false,
-          mini = true,
-          which_key = true,
-          avante = true, -- Add Avante integration
+      require("kanagawa").setup({
+        theme = "dragon",
+        background = {
+          dark = "dragon",
+          light = "lotus",
         },
-      })
-    end,
-  },
-
-  -- Everforest (Light Mode)
-  {
-    "neanias/everforest-nvim",
-    name = "everforest",
-    lazy = false,
-    priority = 1000,
-    config = function()
-      require("everforest").setup({
-        background = "soft", -- 'hard', 'medium', or 'soft'
-        transparent_background_level = 0,
-        italics = true,
-        sign_column_background = "none",
       })
     end,
   },
@@ -50,11 +28,11 @@ return {
         update_interval = 5000,
         set_dark_mode = function()
           vim.api.nvim_set_option_value("background", "dark", {})
-          vim.cmd.colorscheme("catppuccin")
+          vim.cmd("colorscheme kanagawa")
         end,
         set_light_mode = function()
           vim.api.nvim_set_option_value("background", "light", {})
-          vim.cmd.colorscheme("everforest")
+          vim.cmd("colorscheme kanagawa")
         end,
       })
 
@@ -72,11 +50,11 @@ return {
     end,
   },
 
-  -- LazyVim integration - set default to catppuccin
+  -- LazyVim integration - set default to kanagawa
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin",
+      colorscheme = "kanagawa",
     },
   },
 }

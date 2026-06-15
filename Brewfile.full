@@ -1,0 +1,14 @@
+# Full desktop and AI tooling. Installed after the core Brewfile.
+tap "nikitabobko/tap"
+
+brew "bash"
+brew "opencode"
+
+cask "claude-code"
+cask "cursor"
+cask "font-fira-code-nerd-font"
+cask "ghostty"
+cask "nikitabobko/tap/aerospace"
+
+# Codex is intentionally installed separately by scripts/install-packages.sh.
+# Homebrew's Codex cask was invalid during the June 12, 2026 baseline audit.

@@ -1,0 +1,3 @@
+# Store credentials under the profile-specific CODEX_HOME. This avoids sharing
+# a single Keychain entry between work and personal CLI profiles.
+cli_auth_credentials_store = "file"

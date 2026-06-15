@@ -1,0 +1,231 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "google": {
+      "models": {
+        "antigravity-gemini-3-pro": {
+          "name": "Gemini 3 Pro (Antigravity)",
+          "limit": { "context": 1048576, "output": 65535 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          },
+          "variants": {
+            "low": { "thinkingLevel": "low" },
+            "high": { "thinkingLevel": "high" }
+          }
+        },
+        "antigravity-gemini-3-flash": {
+          "name": "Gemini 3 Flash (Antigravity)",
+          "limit": { "context": 1048576, "output": 65536 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          },
+          "variants": {
+            "minimal": { "thinkingLevel": "minimal" },
+            "low": { "thinkingLevel": "low" },
+            "medium": { "thinkingLevel": "medium" },
+            "high": { "thinkingLevel": "high" }
+          }
+        },
+        "antigravity-claude-sonnet-4-5": {
+          "name": "Claude Sonnet 4.5 (no thinking) (Antigravity)",
+          "limit": { "context": 200000, "output": 64000 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          }
+        },
+        "antigravity-claude-sonnet-4-5-thinking": {
+          "name": "Claude Sonnet 4.5 Thinking (Antigravity)",
+          "limit": { "context": 200000, "output": 64000 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          },
+          "variants": {
+            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
+            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
+          }
+        },
+        "antigravity-claude-opus-4-5-thinking": {
+          "name": "Claude Opus 4.5 Thinking (Antigravity)",
+          "limit": { "context": 200000, "output": 64000 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          },
+          "variants": {
+            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
+            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
+          }
+        },
+        "gemini-2.5-flash": {
+          "name": "Gemini 2.5 Flash (Gemini CLI)",
+          "limit": { "context": 1048576, "output": 65536 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          }
+        },
+        "gemini-2.5-pro": {
+          "name": "Gemini 2.5 Pro (Gemini CLI)",
+          "limit": { "context": 1048576, "output": 65536 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          }
+        },
+        "gemini-3-flash-preview": {
+          "name": "Gemini 3 Flash Preview (Gemini CLI)",
+          "limit": { "context": 1048576, "output": 65536 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          }
+        },
+        "gemini-3-pro-preview": {
+          "name": "Gemini 3 Pro Preview (Gemini CLI)",
+          "limit": { "context": 1048576, "output": 65535 },
+          "modalities": {
+            "input": ["text", "image", "pdf"],
+            "output": ["text"]
+          }
+        }
+      }
+    }
+  },
+
+  "mcp": {
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+    },
+    "duckduckgo": {
+      "type": "local",
+      "command": ["npx", "-y", "duckduckgo-mcp-server"],
+      "enabled": true,
+      "timeout": 10000
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    },
+    "grep_app": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true
+    },
+    "notion": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "environment": {
+        "NOTION_TOKEN": "$NOTION_TOKEN"
+      },
+      "enabled": false
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "enabled": true
+    }
+  },
+
+  "agent": {
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    },
+    "developer": {
+      "description": "Primary coding agent - your main workhorse for implementation",
+      "mode": "primary",
+      "model": "openai/gpt-5.2-codex",
+      "temperature": 0.3,
+      "prompt": "{file:~/.config/opencode/agent/developer.md}",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "git *": "allow"
+      }
+    },
+    "project-manager": {
+      "description": "Multi-phase DAG PM orchestrator with verification/review gates and cost-aware routing",
+      "mode": "primary",
+      "model": "github-copilot/claude-opus-4.5",
+      "temperature": 0.2,
+      "prompt": "{file:~/.config/opencode/agent/project-manager.md}",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "git *": "allow"
+      }
+    },
+    "architect": {
+      "description": "System design, refactoring, and architectural decisions, planning",
+      "mode": "primary",
+      "model": "github-copilot/claude-opus-4.5",
+      "temperature": 0.8,
+      "prompt": "{file:~/.config/opencode/agent/architect.md}",
+      "permission": {
+        "edit": {
+          "*.md": "allow",
+          "*.txt": "allow",
+          "*.json": "allow",
+          "*": "ask"
+        },
+        "bash": "allow",
+        "git *": "allow"
+      }
+    },
+    "verifier": {
+      "description": "Code verification and acceptance criteria validation specialist - checks implementation quality and correctness",
+      "mode": "subagent",
+      "model": "openai/gpt-5.1-codex-mini",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/agent/verifier.md}",
+      "permission": {
+        "edit": "deny"
+      }
+    },
+    "oracle": {
+      "description": "Deep reasoning and debugging specialist",
+      "mode": "subagent",
+      "model": "openai/gpt-5.2",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/agent/oracle.md}"
+    },
+    "uiux": {
+      "description": "Visual Engineer for UI/UX and frontend implementation",
+      "mode": "subagent",
+      "model": "openai/gpt-5.3-codex",
+      "temperature": 0.4,
+      "prompt": "{file:~/.config/opencode/agent/uiux.md}"
+    },
+    "general": {
+      "description": "General-purpose implementation subagent",
+      "mode": "subagent",
+      "model": "openai/gpt-5.3-codex",
+      "temperature": 0.2,
+      "prompt": "{file:~/.config/opencode/agent/general.md}"
+    }
+  },
+
+  "tools": {
+    "context7_*": true,
+    "grep_app_*": true
+  },
+
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "webfetch": "allow"
+  }
+}
